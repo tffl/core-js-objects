@@ -346,33 +346,168 @@ function group(array, keySelector, valueSelector) {
  *  For more examples see unit tests.
  */
 
+class CSSBuilder {
+  constructor() {
+    this.elementStr = '';
+    this.idStr = '';
+    this.classes = new Set();
+    this.attributes = new Set();
+    this.pseudoClasses = new Set();
+    this.pseudoElementStr = '';
+    this.allowedCombinators = [' ', '+', '~', '>'];
+    this.combinators = [];
+    this.moreThanOnceErr =
+      'Element, id and pseudo-element should not occur more then one time inside the selector';
+    this.arrangementErr =
+      'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element';
+  }
+
+  element(value) {
+    if (
+      this.idStr !== '' ||
+      this.classes.size + this.attributes.size + this.pseudoClasses.size > 0 ||
+      this.pseudoElementStr !== ''
+    ) {
+      throw Error(this.arrangementErr);
+    }
+    if (this.elementStr !== '') {
+      throw Error(this.moreThanOnceErr);
+    }
+    this.elementStr = value;
+    return this;
+  }
+
+  id(value) {
+    if (
+      this.classes.size + this.attributes.size + this.pseudoClasses.size > 0 ||
+      this.pseudoElementStr !== ''
+    ) {
+      throw Error(this.arrangementErr);
+    }
+    if (this.idStr !== '') {
+      throw Error(this.moreThanOnceErr);
+    }
+    this.idStr = value;
+    return this;
+  }
+
+  class(value) {
+    if (
+      this.attributes.size + this.pseudoClasses.size > 0 ||
+      this.pseudoElementStr !== ''
+    ) {
+      throw Error(this.arrangementErr);
+    }
+    this.classes.add(value);
+    return this;
+  }
+
+  attr(value) {
+    if (this.pseudoClasses.size > 0 || this.pseudoElementStr !== '') {
+      throw Error(this.arrangementErr);
+    }
+    this.attributes.add(value);
+    return this;
+  }
+
+  pseudoClass(value) {
+    if (this.pseudoElementStr !== '') {
+      throw this.arrangementErr;
+    }
+    this.pseudoClasses.add(value);
+    return this;
+  }
+
+  pseudoElement(value) {
+    if (this.pseudoElementStr !== '') {
+      throw Error(this.moreThanOnceErr);
+    }
+    this.pseudoElementStr = value;
+    return this;
+  }
+
+  combine(b1, cmb, b2) {
+    if (!this.allowedCombinators.includes(cmb)) {
+      throw Error(`Unallowed combinator ${cmb}, allowed: ${this.combinators}`);
+    }
+    this.combinators.push({
+      combinator: cmb,
+      builder1: b1,
+      builder2: b2,
+    });
+    return this;
+  }
+
+  stringify() {
+    let finalString = ``;
+    finalString = finalString.concat(this.elementStr);
+    if (this.idStr !== '') {
+      finalString = finalString.concat('#').concat(this.idStr);
+    }
+    if (this.classes.size > 0) {
+      const classes = Array.from(this.classes).join('.');
+      finalString = finalString.concat('.').concat(classes);
+    }
+    if (this.attributes.size > 0) {
+      this.attributes.forEach((attr) => {
+        finalString = finalString.concat(`[${attr}]`);
+      });
+    }
+    if (this.pseudoClasses.size > 0) {
+      this.pseudoClasses.forEach((pClass) => {
+        finalString = finalString.concat(':').concat(pClass);
+      });
+    }
+    if (this.pseudoElementStr !== '') {
+      finalString = finalString.concat(`::${this.pseudoElementStr}`);
+    }
+    if (this.combinators.length > 0) {
+      this.combinators.forEach((combinatorEntry) => {
+        finalString = finalString.concat(
+          `${combinatorEntry.builder1.stringify()} ${
+            combinatorEntry.combinator
+          } ${combinatorEntry.builder2.stringify()}`
+        );
+      });
+    }
+    return finalString;
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    const cb = new CSSBuilder();
+    return cb.element(value);
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    const cb = new CSSBuilder();
+    return cb.id(value);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    const cb = new CSSBuilder();
+    return cb.class(value);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    const cb = new CSSBuilder();
+    return cb.attr(value);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    const cb = new CSSBuilder();
+    return cb.pseudoClass(value);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    const cb = new CSSBuilder();
+    return cb.pseudoElement(value);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    const cb = new CSSBuilder();
+    return cb.combine(selector1, combinator, selector2);
   },
 };
 
